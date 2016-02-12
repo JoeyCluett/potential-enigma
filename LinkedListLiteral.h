@@ -20,7 +20,7 @@
 
     Date Created: 2/1/2016
 
-    Date Last Modified: 2/9/2016
+    Date Last Modified: 2/12/2016
 
     Purpose:
         The second gen linked list library. More secure with the use of the JJC namespace
@@ -42,6 +42,8 @@
 #define ll LinkedList
 #endif // ll
 
+#define OUT_OF_BOUNDS "non-fatal error: out of bounds"
+
 #include <vector>
 #include <iostream>
 
@@ -57,50 +59,56 @@ class LinkedList {
 
         int addToEnd  (T data); //adds data to end of linked list
         int addToBegin(T data); //adds data to beginning of linked list
-
         void removeEnd(void);   //de-allocates memory associated with last element
         void removeBegin(void); //--                                  first element
 
         int getSize(void);
 
-        /* Two callback functions, one accepts a T pointer and one accepts
-            T data. Neither are allowed to return any value */
-        void (*callback_ptr)(T*);
-        void (*callback_lit)(T);
+        /* Methods that pertain to setting/calling callback functions */
         void makeCallbackPtr(void); //calls callback_ptr on every element in linked list
         void makeCallbackLit(void); //calls callback_lit --
+        void setCallbackPtr(void(*callback_fnct)(T*));
+        void setCallbackLit(void(*callback_fnct)(T));
 
+        //ll.at() treats linked list like a zero-indexed array
         T at(int index);                   //for reading data from linked list, instead of overloading index operator
-        std::vector<T> * getDataVec(void);    //returns a pointer to a vector of T data
+        std::vector<T >* getDataVec(void);   //returns a pointer to a vector of T data
         std::vector<T*>* getPointerVec(void);//--                               T data pointers
         /* For getPointerVec() vector, can't use 'using namespace std'. Not sure why yet. */
 
         /* Methods that affect only user_node, they do NOT give the user the ability to modify the linked list
             through the pointer, but do allow the user to retrieve values through it */
-        int moveBack(void);           //returns 1 if move is not allowed due to size constraints of linked list
-        int moveBack(int mv_dist);    //--
-        int moveForward(void);        //--
-        int moveForward(int mv_dist); //--
-        T getData(void); //for retrieving data in user_node
-        T* getPtr(void); //for retrieving pointer to data in node pointed to by user_node
+        int  UN_moveBack(void);           //returns 1 if move is not allowed due to size constraints of linked list, returns 0 if move was successful
+        int  UN_moveBack(int mv_dist);    //--
+        int  UN_moveForward(void);        //--
+        int  UN_moveForward(int mv_dist); //--
+        int  UN_setToEnd(void);           //--
+        int  UN_setToBeg(void);           //--
+        T    UN_getData(void); //for retrieving data in user_node
+        T*   UN_getPtr(void);  //for retrieving pointer to data in node pointed to by user_node
+        bool UN_isSet(void);   //tells calling function if user_node is pointing at part of linked list
 
     private:
+        /* Two callback functions, one accepts a T pointer and one accepts
+            T data. Neither are allowed to return any value */
+        void (*callback_ptr)(T*);
+        void (*callback_lit)(T);
+
         /* Vars get set when callback_ptr and callback_lit get defined by user */
-        bool callback_ptr_set;
-        bool callback_lit_set;
+        bool callback_ptr_set = false;
+        bool callback_lit_set = false;
 
         int ll_size = 0;
+        bool user_node_set = false;
 
         struct node {
             node* prev;
             node* next;
             T datum;
-
             //assuming that T has a copy constructor; all primitive data types have one
             node(T _datum) {
                 datum = _datum;
             }
-
         }; //end of node
 
         node* first_node; //location of first node in linked list
@@ -161,7 +169,7 @@ int JJC::LL<T>::addToEnd(T data) {
         ll_size++;
         return 0;
     } else {
-        std::cout << "non-fatal error in addToEnd: out of bounds" << std::cout;
+        std::cout << OUT_OF_BOUNDS << std::cout;
         return 1;
     }
 }
@@ -179,7 +187,7 @@ int JJC::LL<T>::addToBegin(T data) {
         ll_size++;
         return 0;
     } else {
-        std::cout << "non-fatal error in addToEnd: out of bounds" << std::cout;
+        std::cout << OUT_OF_BOUNDS << std::cout;
     }
     return 1;
 }
@@ -187,18 +195,168 @@ int JJC::LL<T>::addToBegin(T data) {
 template<class T>
 void JJC::LL<T>::removeEnd(void) {
     if(ll_size == 0) {
-
+        std::cout << OUT_OF_BOUNDS << std::endl;
+    } else if(ll_size == 1) { //must ensure that first_node and last_node are made NULL
+        delete first_node;
+        last_node = NULL;
+        ll_size = 0;
+        user_node = 0; //reassign user_node as well
+    } else if(ll_size > 1) {
+        node* temp_ptr = last_node;
+        last_node = last_node->prev_node;
+        delete temp_ptr;
+        last_node->next = NULL;
+        ll_size--;
     }
 }
 
 template<class T>
 void JJC::LL<T>::removeBegin(void) {
-    ;
+    if(ll_size < 2) {
+        removeEnd();
+    } else if(ll_size >= 2) {
+        node* temp_ptr = first_node;
+        first_node = first_node->next;
+        delete temp_ptr; //delete old first node
+        first_node->prev = NULL;
+        ll_size--;
+    }
 }
 
 template<class T>
 int JJC::LL<T>::getSize(void) {
     return ll_size;
+}
+
+template<class T>
+void JJC::LL<T>::makeCallbackPtr(void) {
+    if(callback_ptr_set) {
+        if(ll_size > 0) {
+            node* temp_node = first_node;
+            while(temp_node != NULL) { //iterate through linked list
+                callback_ptr(&temp_node->datum);
+                temp_node = temp_node->next;
+            }
+        } else {
+            std::cout << OUT_OF_BOUNDS << std::endl;
+        }
+    } else {
+        std::cout << OUT_OF_BOUNDS << std::endl;
+    }
+    return;
+}
+
+template<class T>
+void JJC::LL<T>::makeCallbackLit(void) {
+    if(callback_lit_set) {
+        if(ll_size > 0) {
+            node* temp_node = first_node;
+            while(temp_node != NULL) { //iterate through linked list
+                callback_lit(temp_node->datum);
+                temp_node = temp_node->next;
+            }
+        } else {
+            std::cout << OUT_OF_BOUNDS << std::endl;
+        }
+    } else {
+        std::cout << OUT_OF_BOUNDS << std::endl;
+    }
+    return;
+}
+
+template<class T>
+void JJC::LL<T>::setCallbackPtr(void(*callback_fnct)(T*)) {
+    callback_ptr = callback_fnct;
+    callback_ptr_set = true;
+    return;
+}
+
+template<class T>
+void JJC::LL<T>::setCallbackLit(void(*callback_fnct)(T)) {
+    callback_lit = callback_fnct;
+    callback_lit_set = true;
+    return;
+}
+
+template<class T>
+T JJC::LL<T>::at(int index) {
+    if(index >= 0 && index < ll_size) { //checking for legitimate range in linked list
+        node* temp_node = first_node;
+        for(int i = 0; i < index; i++) {
+            temp_node = temp_node->next;
+        }
+        return temp_node->datum;
+    } else {
+        std::cout << OUT_OF_BOUNDS << std::endl;
+    }
+}
+
+template<class T>
+std::vector<T>* JJC::LL<T>::getDataVec(void) {
+    std::vector<T>* this_vec;
+    if(ll_size > 0) {
+        node* temp_node = first_node;
+        while(temp_node != NULL) {
+            this_vec->push_back(temp_node->datum);
+            temp_node = temp_node->next;
+        }
+        return this_vec;
+    } else {
+        return NULL; //if linked list is empty return 0
+    }
+}
+
+template<class T>
+std::vector<T*>* JJC::LL<T>::getPointerVec(void) {
+    ;
+}
+
+    /* Functions that operate only on user_node, will make separate library w/o any user_node functions
+        for more slimmed down programs */
+
+template<class T>
+int JJC::LL<T>::UN_moveBack(void) {
+    ;
+}
+
+template<class T>
+int JJC::LL<T>::UN_moveBack(int mv_dist) {
+    ;
+}
+
+template<class T>
+int JJC::LL<T>::UN_moveForward(void) {
+    ;
+}
+
+template<class T>
+int JJC::LL<T>::UN_moveForward(int mv_dist) {
+    ;
+}
+
+template<class T>
+int JJC::LL<T>::UN_setToEnd(void) {
+    user_node = first_node;
+}
+
+template<class T>
+int JJC::LL<T>::UN_setToBeg(void) {
+    ;
+}
+
+template<class T>
+T JJC::LL<T>::UN_getData(void) {
+    ;
+}
+
+template<class T>
+T* JJC::LL<T>::UN_getPtr(void) {
+    ;
+}
+
+template<class T>
+bool JJC::LL<T>::UN_isSet(void) {
+    return user_node_set;
 }
 
 #endif // LINKEDLISTLITERAL_H
