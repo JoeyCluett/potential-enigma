@@ -20,7 +20,7 @@
 
     Date Created: 2/1/2016
 
-    Date Last Modified: 2/12/2016
+    Date Last Modified: 2/18/2016
 
     Purpose:
         The second gen linked list library. More secure with the use of the JJC namespace
@@ -85,12 +85,16 @@ class LinkedList {
         #if COMPILE_UN_METHODS == 1 //conditional compilation of user_node methods
             /* Methods that affect only user_node, they do NOT give the user the ability to modify the linked list
                 through the pointer, but do allow the user to retrieve values through it */
-            int  UN_moveBack(void);           //returns 1 if move is not allowed due to size constraints of linked list, returns 0 if move was successful
-            int  UN_moveBack(int mv_dist);    //--
-            int  UN_moveForward(void);        //--
-            int  UN_moveForward(int mv_dist); //--
-            int  UN_setToEnd(void);           //--
-            int  UN_setToBeg(void);           //--
+            int  UN_moveBack(void);             //return 1 if successful, else return 0
+            int  UN_moveBack(int mv_dist);      //--
+            int  UN_moveForward(void);          //--
+            int  UN_moveForward(int mv_dist);   //--
+            int  UN_rotateBack(void);           //--
+            int  UN_rotateBack(int mv_dist);    //--
+            int  UN_rotateForward(void);        //--
+            int  UN_rotateForward(int mv_dist); //--
+            int  UN_setToEnd(void);             //--
+            int  UN_setToBeg(void);             //--
             T    UN_getData(void); //for retrieving data in user_node
             T*   UN_getPtr(void);  //for retrieving pointer to data in node pointed to by user_node
             bool UN_isSet(void);   //tells calling function if user_node is pointing at part of linked list
@@ -211,7 +215,7 @@ void JJC::LL<T>::removeEnd(void) {
         user_node = 0; //reassign user_node as well
     } else if(ll_size > 1) {
         node* temp_ptr = last_node;
-        last_node = last_node->prev_node;
+        last_node = last_node->prev;
         delete temp_ptr;
         last_node->next = NULL;
         ll_size--;
@@ -369,6 +373,31 @@ template<class T>
 int JJC::LL<T>::UN_moveForward(int mv_dist) {
     ;
 }
+
+    /* Next 4 methods support wrapping around the linked list */
+
+template<class T>
+int JJC::LL<T>::UN_rotateBack(void) {
+
+    return 0;
+}
+
+template<class T>
+int JJC::LL<T>::UN_rotateBack(int mv_dist) {
+    return 0;
+}
+
+template<class T>
+int JJC::LL<T>::UN_rotateForward(void) {
+    return 0;
+}
+
+template<class T>
+int JJC::LL<T>::UN_rotateForward(int mv_dist) {
+    return 0;
+}
+
+    //===========================================================
 
 template<class T>
 int JJC::LL<T>::UN_setToEnd(void) {
