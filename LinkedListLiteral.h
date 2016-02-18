@@ -28,7 +28,8 @@
 
     Misc. Notes:
         This library will hold any data type that has a defined constructor, this includes all default
-        primitive data types.
+        primitive data types. Using this library allows users to easily create doubly linked lists, thus
+        allowing for easy two-way traversal of the linked list.
 */
 
 #ifndef LINKEDLISTLITERAL_H
@@ -41,6 +42,11 @@
 #ifndef ll
 #define ll LinkedList
 #endif // ll
+
+/* determine if code containing user_node should be compiled (resulting in different size executable) */
+#ifndef COMPILE_UN_METHODS
+#define COMPILE_UN_METHODS 1 //change this to 0 if you do not want user_node methods in your program, it will not affect the rest of the library
+#endif // COMPILE_UN_METHODS
 
 #define OUT_OF_BOUNDS "non-fatal error: out of bounds"
 
@@ -76,17 +82,19 @@ class LinkedList {
         std::vector<T*>* getPointerVec(void);//--                               T data pointers
         /* For getPointerVec() vector, can't use 'using namespace std'. Not sure why yet. */
 
-        /* Methods that affect only user_node, they do NOT give the user the ability to modify the linked list
-            through the pointer, but do allow the user to retrieve values through it */
-        int  UN_moveBack(void);           //returns 1 if move is not allowed due to size constraints of linked list, returns 0 if move was successful
-        int  UN_moveBack(int mv_dist);    //--
-        int  UN_moveForward(void);        //--
-        int  UN_moveForward(int mv_dist); //--
-        int  UN_setToEnd(void);           //--
-        int  UN_setToBeg(void);           //--
-        T    UN_getData(void); //for retrieving data in user_node
-        T*   UN_getPtr(void);  //for retrieving pointer to data in node pointed to by user_node
-        bool UN_isSet(void);   //tells calling function if user_node is pointing at part of linked list
+        #if COMPILE_UN_METHODS == 1 //conditional compilation of user_node methods
+            /* Methods that affect only user_node, they do NOT give the user the ability to modify the linked list
+                through the pointer, but do allow the user to retrieve values through it */
+            int  UN_moveBack(void);           //returns 1 if move is not allowed due to size constraints of linked list, returns 0 if move was successful
+            int  UN_moveBack(int mv_dist);    //--
+            int  UN_moveForward(void);        //--
+            int  UN_moveForward(int mv_dist); //--
+            int  UN_setToEnd(void);           //--
+            int  UN_setToBeg(void);           //--
+            T    UN_getData(void); //for retrieving data in user_node
+            T*   UN_getPtr(void);  //for retrieving pointer to data in node pointed to by user_node
+            bool UN_isSet(void);   //tells calling function if user_node is pointing at part of linked list
+        #endif // COMPILE_UN_METHODS
 
     private:
         /* Two callback functions, one accepts a T pointer and one accepts
@@ -293,7 +301,7 @@ T JJC::LL<T>::at(int index) {
 
 template<class T>
 std::vector<T>* JJC::LL<T>::getDataVec(void) {
-    std::vector<T>* this_vec;
+    std::vector<T>* this_vec = new std::vector<T>;
     if(ll_size > 0) {
         node* temp_node = first_node;
         while(temp_node != NULL) {
@@ -308,25 +316,53 @@ std::vector<T>* JJC::LL<T>::getDataVec(void) {
 
 template<class T>
 std::vector<T*>* JJC::LL<T>::getPointerVec(void) {
+    std::vector<T*>* that_vec = new std::vector<T*>;
+    if(ll_size > 0) {
+        node* temp_node = first_node;
+        while(temp_node != NULL) {
+            that_vec->push_back(&temp_node->datum);
+            temp_node = temp_node->next;
+        }
+        return that_vec;
+    } else {
+        return NULL;
+    }
+}
+
+    /* Functions that operate only on user_node, using conditional compilation headers to
+        optionally not include any user_node methods. These methods do not allow the user
+        to modify the linked list through user_node. Please note that only rudimentary
+        error checking is performed. Future revsions may allow consecutive moves of
+        user_node to wrap around the list. All user_node methods are prefixed with 'UN_'
+        to avoid name contention with the standard linked list methods */
+
+#if COMPILE_UN_METHODS == 1
+
+template<class T>
+int JJC::LL<T>::UN_moveBack(void) { //moves towards first_node
+    if((user_node != first_node) && (user_node != NULL)) {
+        user_node = user_node->prev;
+        return 1; //successful move
+    } else {
+        std::cout << OUT_OF_BOUNDS << std::endl;
+        return 0; //unsuccessful move
+    }
+}
+
+template<class T>
+int JJC::LL<T>::UN_moveBack(int mv_dist) { //calls moveBack() repeatedly with errorchecking
     ;
 }
 
-    /* Functions that operate only on user_node, will make separate library w/o any user_node functions
-        for more slimmed down programs */
-
 template<class T>
-int JJC::LL<T>::UN_moveBack(void) {
-    ;
-}
-
-template<class T>
-int JJC::LL<T>::UN_moveBack(int mv_dist) {
-    ;
-}
-
-template<class T>
-int JJC::LL<T>::UN_moveForward(void) {
-    ;
+int JJC::LL<T>::UN_moveForward(void) { //moves towards last_node
+    if((user_node != last_node) && (user_node != NULL)) {
+        user_node = user_node->next;
+        return 1; //successful move
+    } else {
+        std::cout << OUT_OF_BOUNDS << std::endl;
+        return 0; //unsuccessful move
+    }
 }
 
 template<class T>
@@ -336,27 +372,64 @@ int JJC::LL<T>::UN_moveForward(int mv_dist) {
 
 template<class T>
 int JJC::LL<T>::UN_setToEnd(void) {
-    user_node = first_node;
+    if(last_node != NULL) {
+        user_node = last_node;
+        return 1; //success
+    } else {
+        user_node = NULL;
+        return 0; //failure
+    }
 }
 
 template<class T>
 int JJC::LL<T>::UN_setToBeg(void) {
-    ;
+    if(first_node != NULL) {
+        user_node = first_node;
+        return 1; //success
+    } else {
+        user_node = NULL;
+        return 0; //failure
+    }
 }
 
 template<class T>
 T JJC::LL<T>::UN_getData(void) {
-    ;
+    if(user_node != NULL) {
+        return user_node->datum;
+    } else {
+        std::cout << OUT_OF_BOUNDS << std::endl; //no error checking
+    }
 }
 
+/* Recommend returning pointer and not literal data, as this allows error checking */
 template<class T>
 T* JJC::LL<T>::UN_getPtr(void) {
-    ;
+    if(user_node != NULL) {
+        return &user_node->datum; //return address of data pointed to by user_node
+    } else {
+        return NULL; //return null pointer, this is the error check. User tests return value
+    }
 }
 
+//test to see if user_node is set to valid location in linked list. return true or false depending on state of user_node
 template<class T>
 bool JJC::LL<T>::UN_isSet(void) {
-    return user_node_set;
+    if(!user_node_set || ll_size == 0) {
+        return false;
+    } else if(user_node_set && ll_size > 0) {
+        node* temp_node = last_node;
+        while(temp_node != NULL) { //traverse over linked list backwards
+            if(user_node == temp_node)
+                return true;
+            temp_node = temp_node->prev;
+        }
+    } else {
+        return false; //for any other condition
+    }
 }
 
+#endif // COMPILE_UN_METHODS
 #endif // LINKEDLISTLITERAL_H
+
+//I have not tested the above code. I have only proved it correct
+//I never finish anythi
