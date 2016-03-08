@@ -30,6 +30,8 @@
         This library will hold any data type that has a defined constructor, this includes all default
         primitive data types. Using this library allows users to easily create doubly linked lists, thus
         allowing for easy two-way traversal of the linked list.
+        If the data you want to store in the linked list does not have a well-defined default constructor,
+        I recommend making a linked list of pointers to that data type
 */
 
 #ifndef LINKEDLISTLITERAL_H
@@ -84,16 +86,17 @@ class LinkedList {
 
         #if COMPILE_UN_METHODS == 1 //conditional compilation of user_node methods
             /* Methods that affect only user_node, they do NOT give the user the ability to modify the linked list
-                through the pointer, but do allow the user to retrieve values through it */
-            int  UN_moveBack(void);             //return 1 if successful, else return 0
+                through the pointer, but do allow the user to retrieve values through it. All methods return if
+                successful and 0 if unsuccessful */
+            int  UN_moveBack(void);             //move towards first node
             int  UN_moveBack(int mv_dist);      //--
-            int  UN_moveForward(void);          //--
+            int  UN_moveForward(void);          //move towards last node
             int  UN_moveForward(int mv_dist);   //--
-            int  UN_rotateBack(void);           //--
+            int  UN_rotateBack(void);           //move towards first node
             int  UN_rotateBack(int mv_dist);    //--
-            int  UN_rotateForward(void);        //--
+            int  UN_rotateForward(void);        //move towards last node
             int  UN_rotateForward(int mv_dist); //--
-            int  UN_setToEnd(void);             //--
+            int  UN_setToEnd(void);             //move towards first node
             int  UN_setToBeg(void);             //--
             T    UN_getData(void); //for retrieving data in user_node
             T*   UN_getPtr(void);  //for retrieving pointer to data in node pointed to by user_node
@@ -355,7 +358,12 @@ int JJC::LL<T>::UN_moveBack(void) { //moves towards first_node
 
 template<class T>
 int JJC::LL<T>::UN_moveBack(int mv_dist) { //calls moveBack() repeatedly with errorchecking
-    ;
+    for(int i = 0; i < mv_dist; i++) {
+        if(!UN_moveBack()) {
+            return 0; //unsuccessful move
+        }
+    }
+    return 1; //successful move
 }
 
 template<class T>
@@ -371,41 +379,81 @@ int JJC::LL<T>::UN_moveForward(void) { //moves towards last_node
 
 template<class T>
 int JJC::LL<T>::UN_moveForward(int mv_dist) {
-    ;
+    for(int i = 0; i < mv_dist; i++) {
+        if(!UN_moveForward()) {
+            return 0; //unsuccessful move
+        }
+    }
+    return 1; //successful move
 }
 
-    /* Next 4 methods support wrapping around the linked list */
+    /* Next 4 methods support wrapping around the linked list. This means that advancing past the end of the
+        linked list wraps around to the front of the list and reversing past the front of the list wraps
+        around to the end of the linked list */
 
-template<class T>
+template<class T> //rotate towards first node
 int JJC::LL<T>::UN_rotateBack(void) {
-
-    return 0;
+    //If UN is pointing at first node, wrap around to last node, else move towards first node
+    if((user_node != first_node) && (user_node != NULL)) {
+        user_node = user_node->prev;
+        return 1; //successful move
+    } else if((user_node == first_node) && (user_node != NULL)) {
+        user_node = last_node;
+        return 1; //successful move
+    } else {
+        std::cout << OUT_OF_BOUNDS << std::endl;
+        return 0; //unsuccessful move
+    }
 }
 
-template<class T>
+template<class T> //rotate towards first node
 int JJC::LL<T>::UN_rotateBack(int mv_dist) {
-    return 0;
+    //call UN_rotateBack() repeatedly
+    for(int i = 0; i < mv_dist; i++) {
+        if(!UN_rotateBack()) {
+            return 0; //unsuccessful move
+        }
+    }
+    return 1; //successful move
 }
 
-template<class T>
+template<class T> //rotate towards last node
 int JJC::LL<T>::UN_rotateForward(void) {
-    return 0;
+    //If UN is pointing at last node, wrap around to first node, else move towards last node
+    if((user_node != last_node) && (user_node != NULL)) {
+        user_node = user_node->next;
+        return 1; //successful move
+    } else if((user_node == last_node) && (user_node != NULL)) {
+        user_node = first_node;
+        return 1; //successful move
+    } else {
+        std::cout << OUT_OF_BOUNDS << std::endl;
+        return 0; //unsuccessful move
+    }
 }
 
-template<class T>
+template<class T> //rotate towards last node
 int JJC::LL<T>::UN_rotateForward(int mv_dist) {
-    return 0;
+    //call UN_rotateForward() repeatedly
+    for(int i = 0; i < mv_dist; i++) {
+        if(!UN_rotateForward()) {
+            return 0; //unsuccessful move
+        }
+    }
+    return 1; //successful move
 }
 
-    //===========================================================
+    /* ========================================================= */
 
 template<class T>
 int JJC::LL<T>::UN_setToEnd(void) {
     if(last_node != NULL) {
         user_node = last_node;
+        user_node_set = true;
         return 1; //success
     } else {
         user_node = NULL;
+        user_node_set = false;
         return 0; //failure
     }
 }
@@ -414,9 +462,11 @@ template<class T>
 int JJC::LL<T>::UN_setToBeg(void) {
     if(first_node != NULL) {
         user_node = first_node;
+        user_node_set = true;
         return 1; //success
     } else {
         user_node = NULL;
+        user_node_set = false;
         return 0; //failure
     }
 }
@@ -443,14 +493,14 @@ T* JJC::LL<T>::UN_getPtr(void) {
 //test to see if user_node is set to valid location in linked list. return true or false depending on state of user_node
 template<class T>
 bool JJC::LL<T>::UN_isSet(void) {
-    if(!user_node_set || ll_size == 0) {
+    if(!user_node_set || !ll_size) {
         return false;
     } else if(user_node_set && ll_size > 0) {
-        node* temp_node = last_node;
+        node* temp_node = first_node;
         while(temp_node != NULL) { //traverse over linked list backwards
             if(user_node == temp_node)
                 return true;
-            temp_node = temp_node->prev;
+            temp_node = temp_node->next;
         }
     } else {
         return false; //for any other condition
@@ -458,6 +508,7 @@ bool JJC::LL<T>::UN_isSet(void) {
 }
 
 #endif // COMPILE_UN_METHODS
+
 #endif // LINKEDLISTLITERAL_H
 
 //I have not tested the above code. I have only proved it correct
